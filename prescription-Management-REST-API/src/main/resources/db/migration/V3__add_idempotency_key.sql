@@ -11,3 +11,4 @@ ALTER TABLE prescription_records
         COMMENT 'Client-supplied deduplication key (UUID). NULL = no idempotency protection.',
     ADD CONSTRAINT uk_record_idempotency_key
         UNIQUE (idempotency_key);
+

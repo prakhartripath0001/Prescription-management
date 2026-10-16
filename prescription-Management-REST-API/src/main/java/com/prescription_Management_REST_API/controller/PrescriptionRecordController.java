@@ -19,12 +19,22 @@ public class PrescriptionRecordController {
         this.service = service;
     }
 
-    // POST /api/v1/records
+    /**
+     * POST /api/v1/records
+     *
+     * Idempotency: supply a unique UUID in the X-Idempotency-Key header.
+     * If the same key is sent again (e.g. network retry), the original record
+     * is returned instead of creating a duplicate. The header is optional —
+     * omitting it disables idempotency protection for that request.
+     *
+     * Returns: 201 Created
+     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public RecordResponse create(
+            @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateRecordRequest request) {
-        return service.create(request);
+        return service.create(request, idempotencyKey);
     }
 
     // GET /api/v1/records/{id}
@@ -67,7 +77,7 @@ public class PrescriptionRecordController {
         return service.update(id, request);
     }
 
-    // DELETE /api/v1/records/{id}
+    // DELETE /api/v1/records/{id}  →  204 No Content
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
