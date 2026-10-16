@@ -1,0 +1,144 @@
+==============================================================
+  PRESCRIPTION MANAGEMENT API — CURL TEST COMMANDS
+  Base URL : http://localhost:8080
+  Auth     : Basic Auth  →  username: admin  |  password: admin
+  (Add this to application.properties before starting the app)
+    spring.security.user.name=admin
+    spring.security.user.password=admin
+==============================================================
+  Run these commands in Windows PowerShell or Command Prompt.
+  curl.exe is built into Windows 10 / 11.
+==============================================================
+
+
+──────────────────────────────────────────────────────────────
+  1. CREATE A PRESCRIPTION RECORD  (POST /api/v1/records)
+     Expected: 201 Created
+──────────────────────────────────────────────────────────────
+
+curl.exe -X POST http://localhost:8080/api/v1/records ^
+  -u admin:admin ^
+  -H "Content-Type: application/json" ^
+  -d "{\"userId\":1,\"clientId\":1,\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Seasonal flu with mild fever\",\"entries\":[{\"entryName\":\"Paracetamol 500mg\",\"quantity\":2.0,\"frequency\":\"Twice daily\",\"duration\":5,\"instructions\":\"Take after meals\"},{\"entryName\":\"Vitamin C 1000mg\",\"quantity\":1.0,\"frequency\":\"Once daily\",\"duration\":7,\"instructions\":null}]}"
+
+
+──────────────────────────────────────────────────────────────
+  2. GET ONE RECORD BY ID  (GET /api/v1/records/{id})
+     Expected: 200 OK  — uses record id=1 from seed data
+──────────────────────────────────────────────────────────────
+
+curl.exe -X GET http://localhost:8080/api/v1/records/1 ^
+  -u admin:admin
+
+
+──────────────────────────────────────────────────────────────
+  3. GET ALL RECORDS (paginated)  (GET /api/v1/records)
+     Expected: 200 OK  — page 0, 20 items per page
+──────────────────────────────────────────────────────────────
+
+curl.exe -X GET "http://localhost:8080/api/v1/records?page=0&size=20" ^
+  -u admin:admin
+
+
+──────────────────────────────────────────────────────────────
+  4. UPDATE A RECORD  (PUT /api/v1/records/{id})
+     Expected: 200 OK  — updates record id=1
+     (replaces diagnosis, date, and ALL entries)
+──────────────────────────────────────────────────────────────
+
+curl.exe -X PUT http://localhost:8080/api/v1/records/1 ^
+  -u admin:admin ^
+  -H "Content-Type: application/json" ^
+  -d "{\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Updated: Flu with secondary infection\",\"entries\":[{\"entryName\":\"Amoxicillin 500mg\",\"quantity\":1.0,\"frequency\":\"Three times daily\",\"duration\":7,\"instructions\":\"Complete full course\"},{\"entryName\":\"Paracetamol 500mg\",\"quantity\":2.0,\"frequency\":\"Every 6 hours\",\"duration\":5,\"instructions\":\"Max 8 tablets per day\"}]}"
+
+
+──────────────────────────────────────────────────────────────
+  5. DELETE A RECORD  (DELETE /api/v1/records/{id})
+     Expected: 204 No Content  — deletes record id=4
+     (also deletes all its entries automatically)
+──────────────────────────────────────────────────────────────
+
+curl.exe -X DELETE http://localhost:8080/api/v1/records/4 ^
+  -u admin:admin
+
+
+──────────────────────────────────────────────────────────────
+  6. GET ALL RECORDS FOR A CLIENT  (GET /api/v1/records/client/{clientId})
+     Expected: 200 OK  — all records belonging to client id=1
+     (James Wilson — has 1 record from seed data)
+──────────────────────────────────────────────────────────────
+
+curl.exe -X GET "http://localhost:8080/api/v1/records/client/1?page=0&size=20" ^
+  -u admin:admin
+
+
+──────────────────────────────────────────────────────────────
+  7. GET ALL RECORDS BY A USER  (GET /api/v1/records/user/{userId})
+     Expected: 200 OK  — all records created by user id=1
+     (Dr. Alice Johnson — has 2 records from seed data)
+──────────────────────────────────────────────────────────────
+
+curl.exe -X GET "http://localhost:8080/api/v1/records/user/1?page=0&size=20" ^
+  -u admin:admin
+
+
+==============================================================
+  VALIDATION / ERROR TESTS
+==============================================================
+
+── Send empty entries list → should return 400 Bad Request ──
+
+curl.exe -X POST http://localhost:8080/api/v1/records ^
+  -u admin:admin ^
+  -H "Content-Type: application/json" ^
+  -d "{\"userId\":1,\"clientId\":1,\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Test\",\"entries\":[]}"
+
+
+── Non-existent record ID → should return 500 (404 after adding GlobalExceptionHandler) ──
+
+curl.exe -X GET http://localhost:8080/api/v1/records/9999 ^
+  -u admin:admin
+
+
+── Future date → should return 400 Bad Request (@PastOrPresent violated) ──
+
+curl.exe -X POST http://localhost:8080/api/v1/records ^
+  -u admin:admin ^
+  -H "Content-Type: application/json" ^
+  -d "{\"userId\":1,\"clientId\":1,\"recordDate\":\"2030-01-01\",\"diagnosis\":\"Test\",\"entries\":[{\"entryName\":\"Med\",\"quantity\":1.0,\"frequency\":\"Daily\",\"duration\":5,\"instructions\":null}]}"
+
+
+── Missing required field (no diagnosis) → should return 400 Bad Request ──
+
+curl.exe -X POST http://localhost:8080/api/v1/records ^
+  -u admin:admin ^
+  -H "Content-Type: application/json" ^
+  -d "{\"userId\":1,\"clientId\":1,\"recordDate\":\"2026-10-16\",\"entries\":[{\"entryName\":\"Med\",\"quantity\":1.0,\"frequency\":\"Daily\",\"duration\":5,\"instructions\":null}]}"
+
+
+==============================================================
+  SEED DATA REFERENCE (from V2__seed_test_data.sql)
+==============================================================
+
+  USERS
+  ─────
+  id=1  Dr. Alice Johnson   REG-2024-001
+  id=2  Dr. Bob Williams    REG-2024-002
+  id=3  Dr. Carol Martinez  REG-2024-003
+
+  CLIENTS
+  ───────
+  id=1  James Wilson   (1985-03-12)
+  id=2  Sarah Connor   (1992-07-28)
+  id=3  Michael Brown  (1978-11-05)
+  id=4  Emily Davis    (2000-01-19)
+
+  RECORDS (pre-seeded)
+  ────────────────────
+  id=1  user=1  client=1  2026-10-01  Seasonal allergic rhinitis   ACTIVE
+  id=2  user=1  client=2  2026-10-05  Mild hypertension stage 1    ACTIVE
+  id=3  user=2  client=3  2026-10-10  Type 2 diabetes consult      DRAFT
+  id=4  user=3  client=4  2026-10-14  Acute upper respiratory inf.  COMPLETED
+
+==============================================================
+

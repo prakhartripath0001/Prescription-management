@@ -44,6 +44,15 @@ public class PrescriptionRecord {
     @Column(nullable = false, length = 20)
     private RecordStatus status = RecordStatus.DRAFT;
 
+    /**
+     * Optional client-supplied deduplication key (UUID).
+     * If provided on creation, subsequent requests with the same key
+     * return the existing record instead of creating a duplicate.
+     * Enforced as UNIQUE at the DB level (see V3 migration).
+     */
+    @Column(name = "idempotency_key", unique = true, length = 64)
+    private String idempotencyKey;
+
     // NOTE: @Size(min=1) and @Valid are NOT effective on JPA-managed @OneToMany collections.
     // Enforce "at least one entry" in the service layer before saving.
     @OneToMany(
@@ -74,6 +83,13 @@ public class PrescriptionRecord {
     public void removeEntry(RecordEntry entry) {
         entries.remove(entry);
         entry.setPrescriptionRecord(null);
+    }
+
+    /** Clears all entries so they can be replaced on update.
+     *  orphanRemoval=true ensures removed entries are deleted from DB. */
+    public void clearEntries() {
+        entries.forEach(e -> e.setPrescriptionRecord(null));
+        entries.clear();
     }
 
     public Long getId() {
@@ -110,6 +126,14 @@ public class PrescriptionRecord {
 
     public void setStatus(RecordStatus status) {
         this.status = status;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 
     public List<RecordEntry> getEntries() {
