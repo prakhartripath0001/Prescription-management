@@ -1,101 +1,186 @@
 ==============================================================
   PRESCRIPTION MANAGEMENT API — CURL TEST COMMANDS
   Base URL : http://localhost:8080
-  Auth     : Basic Auth  →  username: admin  |  password: admin
 ==============================================================
-  Use Windows PowerShell or Command Prompt (NOT Git Bash).
-  curl.exe is built into Windows 10 / 11.
+  Accounts (seeded by DataInitializer on first startup):
+
+    username : admin      password : admin123    role : ROLE_ADMIN
+    username : doctor1    password : doctor123   role : ROLE_USER
+
+  Role permissions:
+    ROLE_ADMIN  →  GET, POST, PUT, DELETE  (full access)
+    ROLE_USER   →  GET, POST, PUT          (no DELETE → 403)
+
+  Run in: Windows PowerShell or Command Prompt (NOT Git Bash)
+  curl.exe is built into Windows 10 / 11
 ==============================================================
 
+
+══════════════════════════════════════════════════════════════
+  SECTION 1 — HAPPY PATH (all as ADMIN)
+══════════════════════════════════════════════════════════════
 
 ──────────────────────────────────────────────────────────────
-  1. CREATE A PRESCRIPTION RECORD  (POST /api/v1/records)
+  1. CREATE A RECORD  POST /api/v1/records
      Expected: 201 Created
+     Idempotency-Key prevents duplicates on retry
 ──────────────────────────────────────────────────────────────
 
 curl.exe -X POST http://localhost:8080/api/v1/records ^
-  -u admin:admin ^
+  -u admin:admin123 ^
   -H "Content-Type: application/json" ^
   -H "X-Idempotency-Key: 11111111-1111-1111-1111-111111111111" ^
   -d "{\"userId\":1,\"clientId\":1,\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Seasonal flu with mild fever\",\"entries\":[{\"entryName\":\"Paracetamol 500mg\",\"quantity\":2.0,\"frequency\":\"Twice daily\",\"duration\":5,\"instructions\":\"Take after meals\"},{\"entryName\":\"Vitamin C 1000mg\",\"quantity\":1.0,\"frequency\":\"Once daily\",\"duration\":7,\"instructions\":null}]}"
 
 
 ──────────────────────────────────────────────────────────────
-  1b. RETRY THE SAME CREATE (same idempotency key)
-      Expected: 201 with the SAME record (no duplicate created)
+  1b. RETRY SAME CREATE (same Idempotency-Key)
+      Expected: 201 with ORIGINAL record (no duplicate)
 ──────────────────────────────────────────────────────────────
 
 curl.exe -X POST http://localhost:8080/api/v1/records ^
-  -u admin:admin ^
+  -u admin:admin123 ^
   -H "Content-Type: application/json" ^
   -H "X-Idempotency-Key: 11111111-1111-1111-1111-111111111111" ^
   -d "{\"userId\":1,\"clientId\":1,\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Seasonal flu with mild fever\",\"entries\":[{\"entryName\":\"Paracetamol 500mg\",\"quantity\":2.0,\"frequency\":\"Twice daily\",\"duration\":5,\"instructions\":\"Take after meals\"},{\"entryName\":\"Vitamin C 1000mg\",\"quantity\":1.0,\"frequency\":\"Once daily\",\"duration\":7,\"instructions\":null}]}"
 
 
 ──────────────────────────────────────────────────────────────
-  2. GET ONE RECORD BY ID  (GET /api/v1/records/{id})
+  2. GET ONE RECORD  GET /api/v1/records/{id}
      Expected: 200 OK
 ──────────────────────────────────────────────────────────────
 
 curl.exe -X GET http://localhost:8080/api/v1/records/1 ^
-  -u admin:admin
+  -u admin:admin123
 
 
 ──────────────────────────────────────────────────────────────
-  3. GET ALL RECORDS  (GET /api/v1/records?page=0&size=20)
-     Expected: 200 OK with paginated list
+  3. GET ALL RECORDS (paginated)  GET /api/v1/records
+     Expected: 200 OK with Page wrapper
 ──────────────────────────────────────────────────────────────
 
 curl.exe -X GET "http://localhost:8080/api/v1/records?page=0&size=20" ^
-  -u admin:admin
+  -u admin:admin123
 
 
 ──────────────────────────────────────────────────────────────
-  4. UPDATE A RECORD  (PUT /api/v1/records/{id})
-     Expected: 200 OK — replaces diagnosis, date, and ALL entries
+  4. UPDATE A RECORD  PUT /api/v1/records/{id}
+     Expected: 200 OK — replaces diagnosis, date, ALL entries
 ──────────────────────────────────────────────────────────────
 
 curl.exe -X PUT http://localhost:8080/api/v1/records/1 ^
-  -u admin:admin ^
+  -u admin:admin123 ^
   -H "Content-Type: application/json" ^
-  -d "{\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Updated: Flu with secondary infection\",\"entries\":[{\"entryName\":\"Amoxicillin 500mg\",\"quantity\":1.0,\"frequency\":\"Three times daily\",\"duration\":7,\"instructions\":\"Complete full course\"},{\"entryName\":\"Paracetamol 500mg\",\"quantity\":2.0,\"frequency\":\"Every 6 hours\",\"duration\":5,\"instructions\":\"Max 8 tablets per day\"}]}"
+  -d "{\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Updated: secondary infection confirmed\",\"entries\":[{\"entryName\":\"Amoxicillin 500mg\",\"quantity\":1.0,\"frequency\":\"Three times daily\",\"duration\":7,\"instructions\":\"Complete full course\"},{\"entryName\":\"Paracetamol 500mg\",\"quantity\":2.0,\"frequency\":\"Every 6 hours if needed\",\"duration\":5,\"instructions\":\"Max 8 tablets per day\"}]}"
 
 
 ──────────────────────────────────────────────────────────────
-  5. DELETE A RECORD  (DELETE /api/v1/records/{id})
-     Expected: 204 No Content — also deletes all entries
+  5. DELETE A RECORD  DELETE /api/v1/records/{id}
+     Expected: 204 No Content — entries deleted via cascade
+     (ADMIN only — doctor1 gets 403 for this)
 ──────────────────────────────────────────────────────────────
 
 curl.exe -X DELETE http://localhost:8080/api/v1/records/4 ^
-  -u admin:admin
+  -u admin:admin123
 
 
 ──────────────────────────────────────────────────────────────
-  6. GET ALL RECORDS FOR A CLIENT  (GET /api/v1/records/client/{clientId})
-     Expected: 200 OK paginated list
+  6. GET RECORDS BY CLIENT  GET /api/v1/records/client/{clientId}
+     Expected: 200 OK paginated list for James Wilson (id=1)
 ──────────────────────────────────────────────────────────────
 
 curl.exe -X GET "http://localhost:8080/api/v1/records/client/1?page=0&size=20" ^
-  -u admin:admin
+  -u admin:admin123
 
 
 ──────────────────────────────────────────────────────────────
-  7. GET ALL RECORDS BY A USER  (GET /api/v1/records/user/{userId})
-     Expected: 200 OK paginated list
+  7. GET RECORDS BY USER  GET /api/v1/records/user/{userId}
+     Expected: 200 OK paginated list for Dr. Alice (id=1)
 ──────────────────────────────────────────────────────────────
 
 curl.exe -X GET "http://localhost:8080/api/v1/records/user/1?page=0&size=20" ^
-  -u admin:admin
+  -u admin:admin123
 
 
-==============================================================
-  VALIDATION & ERROR TESTS — expected 400 / 404 / 409
-==============================================================
+══════════════════════════════════════════════════════════════
+  SECTION 2 — ROLE-BASED AUTHORIZATION TESTS
+══════════════════════════════════════════════════════════════
+
+──────────────────────────────────────────────────────────────
+  ROLE_USER can GET records
+  Expected: 200 OK
+──────────────────────────────────────────────────────────────
+
+curl.exe -X GET http://localhost:8080/api/v1/records/1 ^
+  -u doctor1:doctor123
+
+
+──────────────────────────────────────────────────────────────
+  ROLE_USER can POST (create) records
+  Expected: 201 Created
+──────────────────────────────────────────────────────────────
+
+curl.exe -X POST http://localhost:8080/api/v1/records ^
+  -u doctor1:doctor123 ^
+  -H "Content-Type: application/json" ^
+  -H "X-Idempotency-Key: 22222222-2222-2222-2222-222222222222" ^
+  -d "{\"userId\":2,\"clientId\":2,\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Mild hypertension follow-up\",\"entries\":[{\"entryName\":\"Amlodipine 5mg\",\"quantity\":1.0,\"frequency\":\"Once daily\",\"duration\":30,\"instructions\":\"Monitor BP weekly\"}]}"
+
+
+──────────────────────────────────────────────────────────────
+  ROLE_USER can PUT (update) records
+  Expected: 200 OK
+──────────────────────────────────────────────────────────────
+
+curl.exe -X PUT http://localhost:8080/api/v1/records/2 ^
+  -u doctor1:doctor123 ^
+  -H "Content-Type: application/json" ^
+  -d "{\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Hypertension — dosage adjusted\",\"entries\":[{\"entryName\":\"Amlodipine 10mg\",\"quantity\":1.0,\"frequency\":\"Once daily\",\"duration\":60,\"instructions\":\"Monitor BP twice a week\"}]}"
+
+
+──────────────────────────────────────────────────────────────
+  ROLE_USER CANNOT DELETE  →  Expected: 403 Forbidden
+──────────────────────────────────────────────────────────────
+
+curl.exe -X DELETE http://localhost:8080/api/v1/records/3 ^
+  -u doctor1:doctor123
+
+
+══════════════════════════════════════════════════════════════
+  SECTION 3 — AUTHENTICATION TESTS
+══════════════════════════════════════════════════════════════
+
+──────────────────────────────────────────────────────────────
+  No credentials  →  Expected: 401 Unauthorized (JSON)
+──────────────────────────────────────────────────────────────
+
+curl.exe -X GET http://localhost:8080/api/v1/records/1
+
+
+──────────────────────────────────────────────────────────────
+  Wrong password  →  Expected: 401 Unauthorized (JSON)
+──────────────────────────────────────────────────────────────
+
+curl.exe -X GET http://localhost:8080/api/v1/records/1 ^
+  -u admin:WRONGPASSWORD
+
+
+──────────────────────────────────────────────────────────────
+  Non-existent user  →  Expected: 401 Unauthorized (JSON)
+──────────────────────────────────────────────────────────────
+
+curl.exe -X GET http://localhost:8080/api/v1/records/1 ^
+  -u nobody:password
+
+
+══════════════════════════════════════════════════════════════
+  SECTION 4 — VALIDATION & ERROR TESTS  (400 / 404 / 409 / 415)
+══════════════════════════════════════════════════════════════
 
 ── Missing diagnosis → 400 with fieldErrors ──────────────────
 
 curl.exe -X POST http://localhost:8080/api/v1/records ^
-  -u admin:admin ^
+  -u admin:admin123 ^
   -H "Content-Type: application/json" ^
   -d "{\"userId\":1,\"clientId\":1,\"recordDate\":\"2026-10-16\",\"entries\":[{\"entryName\":\"Med\",\"quantity\":1.0,\"frequency\":\"Daily\",\"duration\":5,\"instructions\":null}]}"
 
@@ -103,103 +188,149 @@ curl.exe -X POST http://localhost:8080/api/v1/records ^
 ── Future date → 400 (@PastOrPresent violated) ───────────────
 
 curl.exe -X POST http://localhost:8080/api/v1/records ^
-  -u admin:admin ^
+  -u admin:admin123 ^
   -H "Content-Type: application/json" ^
   -d "{\"userId\":1,\"clientId\":1,\"recordDate\":\"2030-01-01\",\"diagnosis\":\"Test\",\"entries\":[{\"entryName\":\"Med\",\"quantity\":1.0,\"frequency\":\"Daily\",\"duration\":5,\"instructions\":null}]}"
 
 
-── Quantity = 0 → 400 (@DecimalMin inclusive=false violated) ──
+── Quantity = 0 → 400 (@DecimalMin inclusive=false) ──────────
 
 curl.exe -X POST http://localhost:8080/api/v1/records ^
-  -u admin:admin ^
+  -u admin:admin123 ^
   -H "Content-Type: application/json" ^
   -d "{\"userId\":1,\"clientId\":1,\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Test\",\"entries\":[{\"entryName\":\"Med\",\"quantity\":0.0,\"frequency\":\"Daily\",\"duration\":5,\"instructions\":null}]}"
 
 
-── Empty entries list → 400 (service-layer guard) ────────────
+── Duration > 3650 days → 400 (@Max(3650) violated) ─────────
 
 curl.exe -X POST http://localhost:8080/api/v1/records ^
-  -u admin:admin ^
-  -H "Content-Type: application/json" ^
-  -d "{\"userId\":1,\"clientId\":1,\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Test\",\"entries\":[]}"
-
-
-── Non-existent user → 404 ────────────────────────────────────
-
-curl.exe -X POST http://localhost:8080/api/v1/records ^
-  -u admin:admin ^
-  -H "Content-Type: application/json" ^
-  -d "{\"userId\":9999,\"clientId\":1,\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Test\",\"entries\":[{\"entryName\":\"Med\",\"quantity\":1.0,\"frequency\":\"Daily\",\"duration\":5,\"instructions\":null}]}"
-
-
-── Non-existent record → 404 ─────────────────────────────────
-
-curl.exe -X GET http://localhost:8080/api/v1/records/9999 ^
-  -u admin:admin
-
-
-── Duplicate idempotency key (two DIFFERENT bodies) → 201 (returns original) ──
-
-curl.exe -X POST http://localhost:8080/api/v1/records ^
-  -u admin:admin ^
-  -H "Content-Type: application/json" ^
-  -H "X-Idempotency-Key: 11111111-1111-1111-1111-111111111111" ^
-  -d "{\"userId\":2,\"clientId\":2,\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Different diagnosis\",\"entries\":[{\"entryName\":\"Different Med\",\"quantity\":1.0,\"frequency\":\"Daily\",\"duration\":3,\"instructions\":null}]}"
-
-
-── Duration over maximum (3650 days) → 400 ───────────────────
-
-curl.exe -X POST http://localhost:8080/api/v1/records ^
-  -u admin:admin ^
+  -u admin:admin123 ^
   -H "Content-Type: application/json" ^
   -d "{\"userId\":1,\"clientId\":1,\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Test\",\"entries\":[{\"entryName\":\"Med\",\"quantity\":1.0,\"frequency\":\"Daily\",\"duration\":9999,\"instructions\":null}]}"
 
 
-── Malformed JSON → 400 ──────────────────────────────────────
+── Empty entries → 400 (service-layer guard) ─────────────────
 
 curl.exe -X POST http://localhost:8080/api/v1/records ^
-  -u admin:admin ^
+  -u admin:admin123 ^
   -H "Content-Type: application/json" ^
-  -d "THIS IS NOT JSON"
+  -d "{\"userId\":1,\"clientId\":1,\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Test\",\"entries\":[]}"
+
+
+── Non-existent user → 404 Not Found ─────────────────────────
+
+curl.exe -X POST http://localhost:8080/api/v1/records ^
+  -u admin:admin123 ^
+  -H "Content-Type: application/json" ^
+  -d "{\"userId\":9999,\"clientId\":1,\"recordDate\":\"2026-10-16\",\"diagnosis\":\"Test\",\"entries\":[{\"entryName\":\"Med\",\"quantity\":1.0,\"frequency\":\"Daily\",\"duration\":5,\"instructions\":null}]}"
+
+
+── Non-existent record → 404 Not Found ───────────────────────
+
+curl.exe -X GET http://localhost:8080/api/v1/records/9999 ^
+  -u admin:admin123
+
+
+── Wrong path variable type (/records/abc) → 400 ────────────
+
+curl.exe -X GET http://localhost:8080/api/v1/records/abc ^
+  -u admin:admin123
+
+
+── Wrong Content-Type (not JSON) → 415 ──────────────────────
+
+curl.exe -X POST http://localhost:8080/api/v1/records ^
+  -u admin:admin123 ^
+  -H "Content-Type: text/plain" ^
+  -d "this is not json"
+
+
+── Malformed JSON body → 400 ─────────────────────────────────
+
+curl.exe -X POST http://localhost:8080/api/v1/records ^
+  -u admin:admin123 ^
+  -H "Content-Type: application/json" ^
+  -d "NOT_JSON_AT_ALL"
+
+
+── Wrong HTTP verb (DELETE /records — no ID) → 405 ──────────
+
+curl.exe -X DELETE "http://localhost:8080/api/v1/records" ^
+  -u admin:admin123
 
 
 ==============================================================
-  SEED DATA REFERENCE (from V2__seed_test_data.sql)
+  EXPECTED RESPONSE SHAPES
 ==============================================================
 
-  USERS
-  ─────
-  id=1  Dr. Alice Johnson   REG-2024-001
-  id=2  Dr. Bob Williams    REG-2024-002
-  id=3  Dr. Carol Martinez  REG-2024-003
+  SUCCESS (201 / 200):
+  {
+    "id": 5,
+    "userId": 1,
+    "clientId": 1,
+    "recordDate": "2026-10-16",
+    "diagnosis": "Seasonal flu with mild fever",
+    "status": "DRAFT",
+    "entries": [
+      { "id": 9, "entryName": "Paracetamol 500mg", "quantity": 2.00,
+        "frequency": "Twice daily", "duration": 5, "instructions": "Take after meals" }
+    ]
+  }
 
-  CLIENTS
-  ───────
-  id=1  James Wilson   (1985-03-12)
-  id=2  Sarah Connor   (1992-07-28)
-  id=3  Michael Brown  (1978-11-05)
-  id=4  Emily Davis    (2000-01-19)
-
-  RECORDS (pre-seeded, id=5+ created by your POST tests)
-  ────────────────────
-  id=1  user=1  client=1  ACTIVE
-  id=2  user=1  client=2  ACTIVE
-  id=3  user=2  client=3  DRAFT
-  id=4  user=3  client=4  COMPLETED  (deleted in test #5)
-
-==============================================================
-  EXPECTED ERROR RESPONSE SHAPE
-==============================================================
-
+  VALIDATION ERROR (400):
   {
     "status": 400,
     "error": "Validation Failed",
-    "message": "One or more fields failed validation...",
-    "timestamp": "2026-10-16T18:00:00",
+    "message": "One or more fields failed validation — see fieldErrors for details.",
+    "timestamp": "2026-10-16T19:00:00",
     "fieldErrors": {
       "diagnosis": "must not be blank",
       "entries[0].quantity": "quantity must be greater than 0"
     }
   }
+
+  NOT FOUND (404):
+  { "status": 404, "error": "Not Found",
+    "message": "Record not found: id=9999", "timestamp": "...", "fieldErrors": null }
+
+  UNAUTHORIZED (401):
+  { "status": 401, "error": "Unauthorized",
+    "message": "Authentication required. Provide valid Basic Auth credentials...",
+    "timestamp": "...", "fieldErrors": null }
+
+  FORBIDDEN (403):
+  { "status": 403, "error": "Forbidden",
+    "message": "You do not have permission to perform this action. DELETE requires the ADMIN role.",
+    "timestamp": "...", "fieldErrors": null }
+
+==============================================================
+  SEED DATA REFERENCE (from V2__seed_test_data.sql)
+==============================================================
+
+  USERS (prescribers — NOT security accounts)
+  ────────────────────────────────────────────
+  id=1  Dr. Alice Johnson   REG-2024-001
+  id=2  Dr. Bob Williams    REG-2024-002
+  id=3  Dr. Carol Martinez  REG-2024-003
+
+  CLIENTS (patients)
+  ──────────────────
+  id=1  James Wilson   (1985-03-12)
+  id=2  Sarah Connor   (1992-07-28)
+  id=3  Michael Brown  (1978-11-05)
+  id=4  Emily Davis    (2000-01-19)
+
+  SECURITY ACCOUNTS (from DataInitializer — app_users table)
+  ───────────────────────────────────────────────────────────
+  admin    / admin123    → ROLE_ADMIN  (GET POST PUT DELETE)
+  doctor1  / doctor123  → ROLE_USER   (GET POST PUT only)
+
+  PRE-SEEDED RECORDS
+  ──────────────────
+  id=1  user=1 client=1  ACTIVE     (updated by test #4)
+  id=2  user=1 client=2  ACTIVE
+  id=3  user=2 client=3  DRAFT
+  id=4  user=3 client=4  COMPLETED  (deleted by test #5)
+  id=5+ created by your POST tests
 
 ==============================================================
