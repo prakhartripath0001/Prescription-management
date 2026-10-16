@@ -30,7 +30,7 @@ import java.time.LocalDateTime;
  * All 401 / 403 responses are returned as structured JSON (never HTML).
  * Sessions are stateless — no cookies, no CSRF token needed.
  *
- * Latest-feature notes (Java 21 / Spring Boot 4):
+ * Latest-feature notes (Java 21 / Spring Boot 3.x):
  *  - Lambda DSL for all HttpSecurity configuration (no deprecated chained .and())
  *  - PasswordEncoder with BCrypt strength 12 (recommended for Java 21)
  *  - Virtual threads enabled in application.properties (spring.threads.virtual.enabled=true)
