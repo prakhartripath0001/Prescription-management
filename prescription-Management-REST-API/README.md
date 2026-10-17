@@ -4,7 +4,7 @@ A Spring Boot REST API for managing prescription records with role-based access 
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Features](#features)
 - [Tech Stack](#tech-stack)
@@ -19,7 +19,7 @@ A Spring Boot REST API for managing prescription records with role-based access 
 
 ---
 
-## 🚀 Features
+## Features
 
 - **CRUD operations** for prescription records with medication entries
 - **Pagination** on all list endpoints (configurable page/size)
@@ -33,22 +33,22 @@ A Spring Boot REST API for managing prescription records with role-based access 
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
 | Language | Java 21 LTS |
-| Framework | Spring Boot 3.5.0 |
+| Framework | Spring Boot 3.2.5 |
 | Data Access | Spring Data JPA, Hibernate |
 | Database | MySQL 8.x |
 | Migrations | Flyway |
 | Security | Spring Security (HTTP Basic, BCrypt) |
 | Validation | Jakarta Bean Validation |
-| API Docs | SpringDoc OpenAPI 2.7.0 |
+| API Docs | SpringDoc OpenAPI 2.5.0 |
 | Testing | JUnit 5, Mockito, MockMvc, Testcontainers |
 | Build | Apache Maven |
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/main/java/com/prescription_Management_REST_API/
@@ -66,7 +66,7 @@ src/main/java/com/prescription_Management_REST_API/
 
 src/main/resources/
 ├── application.properties
-└── db/migration/        # Flyway SQL migrations (V1–V4)
+└── db/migration/        # Flyway SQL migrations (V1-V4)
 
 src/test/java/
 ├── PrescriptionRecordServiceTest.java      # Unit tests (Mockito)
@@ -78,7 +78,7 @@ test-data/curl-commands.txt   # Sample curl test commands
 docs/                         # Design and strategy documentation
 ```
 ---
-## 🗄 Database Schema & Migrations
+## Database Schema & Migrations
 
 Four Flyway migration SQL files under `src/main/resources/db/migration/`:
 
@@ -92,7 +92,7 @@ Four Flyway migration SQL files under `src/main/resources/db/migration/`:
 Schema DDL is owned by Flyway (`spring.jpa.hibernate.ddl-auto=validate`). Hibernate validates schema-entity consistency at startup only.
 
 ---
-## ⚙️ Setup & Run
+## Setup & Run
 
 ### Prerequisites
 
@@ -133,7 +133,7 @@ Or use environment variables: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`
 The API will be available at: `http://localhost:8080`
 
 ---
-## 🔐 Authentication & Security
+## Authentication & Security
 
 ### Authentication Method
 
@@ -144,19 +144,19 @@ The API will be available at: `http://localhost:8080`
 | Username | Password | Role | Permissions |
 |----------|----------|------|-------------|
 | `admin` | `admin123` | `ROLE_ADMIN` | GET, POST, PUT, DELETE |
-| `doctor1` | `doctor123` | `ROLE_USER` | GET, POST, PUT (DELETE → 403) |
+| `doctor1` | `doctor123` | `ROLE_USER` | GET, POST, PUT (DELETE -> 403) |
 
 ### Role-Based Access Control
 
 | Endpoint | ROLE_ADMIN | ROLE_USER |
 |----------|------------|-----------|
-| `GET /api/v1/records` | ✅ | ✅ |
-| `GET /api/v1/records/{id}` | ✅ | ✅ |
-| `GET /api/v1/records/client/{id}` | ✅ | ✅ |
-| `GET /api/v1/records/user/{id}` | ✅ | ✅ |
-| `POST /api/v1/records` | ✅ | ✅ |
-| `PUT /api/v1/records/{id}` | ✅ | ✅ |
-| `DELETE /api/v1/records/{id}` | ✅ | ❌ (403 Forbidden) |
+| `GET /api/v1/records` | Yes | Yes |
+| `GET /api/v1/records/{id}` | Yes | Yes |
+| `GET /api/v1/records/client/{id}` | Yes | Yes |
+| `GET /api/v1/records/user/{id}` | Yes | Yes |
+| `POST /api/v1/records` | Yes | Yes |
+| `PUT /api/v1/records/{id}` | Yes | Yes |
+| `DELETE /api/v1/records/{id}` | Yes | No (403 Forbidden) |
 
 ### Password Security
 
@@ -165,7 +165,7 @@ The API will be available at: `http://localhost:8080`
 - Stateless sessions — no cookies, no CSRF tokens
 
 ---
-## 📖 API Documentation
+## API Documentation
 
 ### Swagger UI
 
@@ -183,7 +183,7 @@ http://localhost:8080/v3/api-docs
 
 All endpoints require HTTP Basic Auth. Use the "Authorize" button in Swagger UI with your credentials.
 
-## 🧪 Sample API Requests
+## Sample API Requests
 
 ---
 
@@ -260,7 +260,7 @@ Expected: `401 Unauthorized`
 
 For comprehensive curl commands including negative test cases, see `test-data/curl-commands.txt`.
 
-## 🧪 Running Tests
+## Running Tests
 
 ### Unit Tests Only (no Docker required)
 
@@ -280,11 +280,11 @@ Integration tests use Testcontainers to spin up a real MySQL 8.0 container:
 
 | Test Class | Type | Test Cases |
 |------------|------|------------|
-| `PrescriptionRecordServiceTest` | Unit (Mockito) | 12 — create, get, update, delete with success/failure paths |
+| `PrescriptionRecordServiceTest` | Unit (Mockito) | 14 — create, get, update, delete with success/failure paths |
 | `PrescriptionRecordControllerTest` | Controller (MockMvc) | 8 — all HTTP methods with ADMIN/USER roles and unauthenticated access |
-| `PrescriptionRecordIntegrationTest` | Integration (Testcontainers MySQL) | 3 — end-to-end: POST→GET, DELETE role-based, UPDATE |
+| `PrescriptionRecordIntegrationTest` | Integration (Testcontainers MySQL) | 3 — end-to-end: POST->GET, DELETE role-based, UPDATE |
 
-## 🏗 Architecture Decisions
+## Architecture Decisions
 
 ### 1. DTOs Instead of Exposing Entities
 
@@ -316,12 +316,13 @@ No sessions, no CSRF, no JWT. Credentials sent on every request via `Authorizati
 
 `@RestControllerAdvice` converts all exceptions to structured `ErrorResponse` JSON. Internal details (stack traces, SQL messages) are never sent to clients.
 
-## 📚 Additional Documentation
+## Additional Documentation
 
 | File | Contents |
 |------|----------|
 | `docs/IMPLEMENTATION_STRATEGY.md` | Full implementation strategy — entities, packages, validation, security, testing, OpenAPI, run commands |
 | `docs/DESIGN_TRADE_OFFS.md` | 10 design decisions with pros/cons tables and verdicts |
+| `docs/RESULTS_REPORT.md` | Test execution metrics, environment details, and verification results report |
 | `test-data/curl-commands.txt` | Comprehensive curl test commands (happy path, negative tests, idempotency, role-based access) |
 
 ---
