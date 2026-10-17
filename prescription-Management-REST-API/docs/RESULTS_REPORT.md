@@ -64,3 +64,14 @@ A fresh verification and test execution was performed from start to finish using
 
 Detailed end-to-end sample requests (including curl commands, headers, and request payloads) and expected responses are available in [`test-data/curl-commands.txt`](file:///c:/Users/tripa/Downloads/prescription-Management-REST-API/prescription-Management-REST-API/test-data/curl-commands.txt).
 
+---
+
+## 5. AI Tools & Assistance Disclosure
+
+In compliance with project submission guidelines, the following AI tools and their respective roles, purposes, and usage levels are transparently disclosed:
+
+| AI Tool | Purpose & Tasks | Usage Level | Details |
+|---|---|:---:|---|
+| **ChatGPT** | Security checklist, bug fixes, issue fixes, and design guidance | **Medium** | - **Security Checklist & Hardening:** Reviewing role-based access control (RBAC), password hashing (BCrypt 12), and security checklist items.<br>- **Bug & Issue Fixes:** Troubleshooting Spring Security filter chain test slice context errors, Hibernate 6 enum schema mismatch (`columnDefinition = "varchar(20)"`), and Maven dependency resolution issues.<br>- **Architecture & Design:** Guiding REST DTO patterns, database schema constraint strategy, and idempotency handling. |
+| **Antigravity AI Pair Programmer** | Workspace execution, automated test execution, code editing, and verification | **High** | - Automated file edits, running Maven wrapper tests (`./mvnw test`), identifying failing tests, and validating runtime startup. |
+

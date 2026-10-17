@@ -322,7 +322,14 @@ No sessions, no CSRF, no JWT. Credentials sent on every request via `Authorizati
 |------|----------|
 | `docs/IMPLEMENTATION_STRATEGY.md` | Full implementation strategy — entities, packages, validation, security, testing, OpenAPI, run commands |
 | `docs/DESIGN_TRADE_OFFS.md` | 10 design decisions with pros/cons tables and verdicts |
-| `docs/RESULTS_REPORT.md` | Test execution metrics, environment details, and verification results report |
+| `docs/RESULTS_REPORT.md` | Test execution metrics, environment details, verification results, and AI tools disclosure |
 | `test-data/curl-commands.txt` | Comprehensive curl test commands (happy path, negative tests, idempotency, role-based access) |
 
+---
+
+## AI Tools & Usage Disclosure
+
+The following AI tools and their purposes/usage levels were used during development and project completion:
+
+- **ChatGPT** — **Medium Usage**: Used for security checklist verification, bug fixes (Hibernate 6 schema mapping, Maven starter dependencies), issue resolution, and system design consultations.
 ---
