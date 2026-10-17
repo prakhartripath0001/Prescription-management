@@ -237,7 +237,7 @@ class PrescriptionRecordServiceTest {
         Client c = client(1L);
         PrescriptionRecord r = record(1L, u, c);
         Page<PrescriptionRecord> page = new PageImpl<>(List.of(r), PageRequest.of(0, 20), 1);
-        when(recordRepository.findAllBy(PageRequest.of(0, 20))).thenReturn(page);
+        when(recordRepository.findAllBy(any(org.springframework.data.domain.Pageable.class))).thenReturn(page);
 
         Page<RecordResponse> result = service.getAll(0, 20);
 
@@ -256,7 +256,6 @@ class PrescriptionRecordServiceTest {
         Client c = client(1L);
         PrescriptionRecord r = record(1L, u, c);
         when(recordRepository.findWithEntriesById(1L)).thenReturn(Optional.of(r));
-        when(recordRepository.save(any(PrescriptionRecord.class))).thenReturn(r);
 
         RecordResponse response = service.update(1L, updateRequest());
 

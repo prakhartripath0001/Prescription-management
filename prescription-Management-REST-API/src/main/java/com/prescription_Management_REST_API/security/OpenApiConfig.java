@@ -1,5 +1,6 @@
 package com.prescription_Management_REST_API.security;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
@@ -47,13 +48,13 @@ public class OpenApiConfig {
                                 - ROLE_USER:  GET, POST, PUT on /api/v1/records/** (DELETE → 403)
                                 """))
                 .addSecurityItem(new SecurityRequirement().addList("basicAuth"))
-                .securitySchemes(List.of(
-                        new SecurityScheme()
-                                .type(SecurityScheme.Type.HTTP)
-                                .scheme("basic")
-                                .name("basicAuth")
-                                .description("HTTP Basic Authentication (username:password)")
-                ))
+                .components(new Components()
+                        .addSecuritySchemes("basicAuth",
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("basic")
+                                        .name("basicAuth")
+                                        .description("HTTP Basic Authentication (username:password)")))
                 .tags(List.of(
                         new Tag().name("Prescription Records").description("CRUD operations for prescription records")
                 ));

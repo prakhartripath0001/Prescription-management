@@ -6,11 +6,14 @@ import com.prescription_Management_REST_API.dto.request.RecordEntryRequest;
 import com.prescription_Management_REST_API.dto.request.UpdateRecordRequest;
 import com.prescription_Management_REST_API.dto.response.RecordResponse;
 import com.prescription_Management_REST_API.service.PrescriptionRecordService;
+import com.prescription_Management_REST_API.security.AppUserDetailsService;
+import com.prescription_Management_REST_API.security.SecurityConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = com.prescription_Management_REST_API.controller.PrescriptionRecordController.class)
+@Import(SecurityConfig.class)
 class PrescriptionRecordControllerTest {
 
     @Autowired
@@ -38,6 +42,9 @@ class PrescriptionRecordControllerTest {
 
     @MockBean
     private PrescriptionRecordService service;
+
+    @MockBean
+    private AppUserDetailsService appUserDetailsService;
 
     private String jsonCreate() {
         try {
